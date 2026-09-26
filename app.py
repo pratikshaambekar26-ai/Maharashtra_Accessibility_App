@@ -10,13 +10,11 @@ st.set_page_config(
 
 st.title("Maharashtra District Accessibility Map")
 
-# Excel file
 df = pd.read_excel(
     "sonu ojt.xlsx",
     sheet_name="Final Result"
 )
 
-# GeoJSON file
 with open("maharashtra.geojson", "r", encoding="utf-8") as f:
     geojson = json.load(f)
 
@@ -46,7 +44,10 @@ fig.update_layout(
     margin=dict(r=0, t=20, l=0, b=0)
 )
 
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(
+    fig,
+    use_container_width=True
+)
 
 st.subheader("District Accessibility Result")
 
@@ -54,6 +55,3 @@ st.dataframe(
     df,
     use_container_width=True
 )
-        
-
-   
