@@ -3,45 +3,57 @@ import pandas as pd
 import json
 import plotly.express as px
 
+st.set_page_config(
+    page_title="Maharashtra District Accessibility Map",
+    layout="wide"
+)
+
 st.title("Maharashtra District Accessibility Map")
 
-file = st.file_uploader("Upload Excel File", type=["xlsx"])
+# Excel file
+df = pd.read_excel(
+    "sonu ojt.xlsx",
+    sheet_name="Final Result"
+)
 
-if file is not None:
+# GeoJSON file
+with open("maharashtra.geojson", "r", encoding="utf-8") as f:
+    geojson = json.load(f)
 
-    df = pd.read_excel(file, sheet_name="Final Result")
+st.subheader("District Accessibility Map")
 
-    with open("maharashtra.geojson", "r", encoding="utf-8") as f:
-        geojson = json.load(f)
+fig = px.choropleth(
+    df,
+    geojson=geojson,
+    locations="District Name (district_name)",
+    featureidkey="properties.district",
+    color="Overall Accessibility Score",
+    hover_name="District Name (district_name)",
+    hover_data={
+        "Overall Accessibility Score": ":.4f",
+        "Rank": True
+    },
+    color_continuous_scale="Viridis"
+)
 
-    st.subheader("District Accessibility Map")
+fig.update_geos(
+    fitbounds="locations",
+    visible=False
+)
 
-    fig = px.choropleth(
-        df,
-        geojson=geojson,
-        locations="District Name (district_name)",
-        featureidkey="properties.district",
-        color="Overall Accessibility Score",
-        hover_name="District Name (district_name)",
-        hover_data={
-            "Overall Accessibility Score": True,
-            "Rank": True
-        },
-        color_continuous_scale="Viridis"
-    )
+fig.update_layout(
+    height=700,
+    margin=dict(r=0, t=20, l=0, b=0)
+)
 
-    fig.update_geos(
-        fitbounds="locations",
-        visible=False
-    )
+st.plotly_chart(fig, use_container_width=True)
 
-    fig.update_layout(
-        height=700,
-        margin={"r": 0, "t": 0, "l": 0, "b": 0}
-    )
+st.subheader("District Accessibility Result")
 
-    st.plotly_chart(fig, use_container_width=True)
+st.dataframe(
+    df,
+    use_container_width=True
+)
+        
 
-    st.subheader("District Accessibility Result")
-
-    st.dataframe(df)
+   
