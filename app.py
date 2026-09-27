@@ -30,28 +30,28 @@ new_names = {
     "Osmanabad": "Dharashiv"
 }
 
-# Excel मधील district names नवीन नावात बदलणे
-df["Display District"] = df["District Name (district_name)"].replace(new_names)
-
-# --------------------------------------------------
-# 3. 3 ACCESSIBILITY LEVELS
-# --------------------------------------------------
-
-df["Accessibility Level"] = pd.cut(
-    df["Overall Accessibility Score"],
-    bins=[-float("inf"), 0.40, 0.60, float("inf")],
-    labels=["Low", "Medium", "High"]
+# Excel मधील district names update
+df["District Name (district_name)"] = (
+    df["District Name (district_name)"]
+    .replace(new_names)
 )
 
 # --------------------------------------------------
-# 4. READ GEOJSON
+# 3. READ GEOJSON
 # --------------------------------------------------
 
 with open("maharashtra.geojson", "r", encoding="utf-8") as f:
     geojson = json.load(f)
 
+# GeoJSON मधील district names update
+for feature in geojson["features"]:
+    old_name = feature["properties"].get("district")
+
+    if old_name in new_names:
+        feature["properties"]["district"] = new_names[old_name]
+
 # --------------------------------------------------
-# 5. DISTRICT LABEL POSITIONS
+# 4. DISTRICT LABEL POSITIONS
 # --------------------------------------------------
 
 def get_all_points(coords):
@@ -92,29 +92,37 @@ for feature in geojson["features"]:
 labels = pd.DataFrame(label_data)
 
 # --------------------------------------------------
-# 6. NEW NAMES FOR MAP LABELS
-# --------------------------------------------------
-
-labels["Display District"] = labels["District"].replace(new_names)
-
-# --------------------------------------------------
-# 7. MATCH RANK WITH DISTRICT
+# 5. MATCH RANK WITH DISTRICT
 # --------------------------------------------------
 
 labels = labels.merge(
-    df[
-        [
-            "District Name (district_name)",
-            "Rank"
-        ]
-    ],
+    df[["District Name (district_name)", "Rank"]],
     left_on="District",
     right_on="District Name (district_name)",
     how="left"
 )
 
 # --------------------------------------------------
-# 8. CHOROPLETH MAP
+# 6. CREATE 3 ACCESSIBILITY LEVELS
+# --------------------------------------------------
+
+df["Accessibility Level"] = pd.cut(
+    df["Overall Accessibility Score"],
+    bins=[
+        -float("inf"),
+        0.40,
+        0.60,
+        float("inf")
+    ],
+    labels=[
+        "Low",
+        "Medium",
+        "High"
+    ]
+)
+
+# --------------------------------------------------
+# 7. CHOROPLETH MAP
 # --------------------------------------------------
 
 st.subheader("District Accessibility Map")
@@ -124,9 +132,11 @@ fig = px.choropleth(
     geojson=geojson,
     locations="District Name (district_name)",
     featureidkey="properties.district",
+
+    # आता Score ऐवजी 3 categories
     color="Accessibility Level",
 
-    hover_name="Display District",
+    hover_name="District Name (district_name)",
 
     hover_data={
         "Overall Accessibility Score": ":.4f",
@@ -134,6 +144,7 @@ fig = px.choropleth(
         "Accessibility Level": True
     },
 
+    # फक्त 3 colours
     color_discrete_map={
         "Low": "#F4A6A6",
         "Medium": "#FFD966",
@@ -142,7 +153,7 @@ fig = px.choropleth(
 )
 
 # --------------------------------------------------
-# 9. DISTRICT NAME + RANK
+# 8. DISTRICT NAME + RANK
 # --------------------------------------------------
 
 fig.add_trace(
@@ -153,7 +164,7 @@ fig.add_trace(
         text=[
             f"{name}<br>Rank: {rank}"
             for name, rank in zip(
-                labels["Display District"],
+                labels["District"],
                 labels["Rank"]
             )
         ],
@@ -169,7 +180,7 @@ fig.add_trace(
         hovertext=[
             f"{name}<br>Rank: {rank}"
             for name, rank in zip(
-                labels["Display District"],
+                labels["District"],
                 labels["Rank"]
             )
         ],
@@ -179,7 +190,7 @@ fig.add_trace(
 )
 
 # --------------------------------------------------
-# 10. MAP SETTINGS
+# 9. MAP SETTINGS
 # --------------------------------------------------
 
 fig.update_geos(
@@ -199,7 +210,7 @@ fig.update_layout(
 )
 
 # --------------------------------------------------
-# 11. DISPLAY MAP
+# 10. DISPLAY MAP
 # --------------------------------------------------
 
 st.plotly_chart(
@@ -208,7 +219,7 @@ st.plotly_chart(
 )
 
 # --------------------------------------------------
-# 12. RESULT TABLE
+# 11. RESULT TABLE
 # --------------------------------------------------
 
 st.subheader("District Accessibility Result")
