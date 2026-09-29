@@ -20,6 +20,12 @@ df = pd.read_excel(
     sheet_name="Final Result"
 )
 
+# Rank as INTEGER
+df["Rank"] = pd.to_numeric(
+    df["Rank"],
+    errors="coerce"
+).astype("Int64")
+
 # --------------------------------------------------
 # 2. NEW DISTRICT NAMES
 # --------------------------------------------------
@@ -30,7 +36,6 @@ new_names = {
     "Osmanabad": "Dharashiv"
 }
 
-# Excel मधील district names update
 df["District Name (district_name)"] = (
     df["District Name (district_name)"]
     .replace(new_names)
@@ -43,8 +48,8 @@ df["District Name (district_name)"] = (
 with open("maharashtra.geojson", "r", encoding="utf-8") as f:
     geojson = json.load(f)
 
-# GeoJSON मधील district names update
 for feature in geojson["features"]:
+
     old_name = feature["properties"].get("district")
 
     if old_name in new_names:
@@ -55,17 +60,24 @@ for feature in geojson["features"]:
 # --------------------------------------------------
 
 def get_all_points(coords):
+
     points = []
 
     def extract(obj):
+
         if isinstance(obj, (list, tuple)):
+
             if len(obj) >= 2 and isinstance(obj[0], (int, float)):
-                points.append((obj[0], obj[1]))
+                points.append(
+                    (obj[0], obj[1])
+                )
+
             else:
                 for item in obj:
                     extract(item)
 
     extract(coords)
+
     return points
 
 
@@ -77,17 +89,28 @@ for feature in geojson["features"]:
 
     geometry = feature["geometry"]
 
-    points = get_all_points(geometry["coordinates"])
+    points = get_all_points(
+        geometry["coordinates"]
+    )
 
     if points:
-        avg_lon = sum(p[0] for p in points) / len(points)
-        avg_lat = sum(p[1] for p in points) / len(points)
+
+        avg_lon = (
+            sum(p[0] for p in points)
+            / len(points)
+        )
+
+        avg_lat = (
+            sum(p[1] for p in points)
+            / len(points)
+        )
 
         label_data.append({
             "District": district_name,
             "lon": avg_lon,
             "lat": avg_lat
         })
+
 
 labels = pd.DataFrame(label_data)
 
@@ -96,24 +119,38 @@ labels = pd.DataFrame(label_data)
 # --------------------------------------------------
 
 labels = labels.merge(
-    df[["District Name (district_name)", "Rank"]],
+    df[
+        [
+            "District Name (district_name)",
+            "Rank"
+        ]
+    ],
     left_on="District",
     right_on="District Name (district_name)",
     how="left"
 )
+
+# Rank as INTEGER
+labels["Rank"] = pd.to_numeric(
+    labels["Rank"],
+    errors="coerce"
+).astype("Int64")
 
 # --------------------------------------------------
 # 6. CREATE 3 ACCESSIBILITY LEVELS
 # --------------------------------------------------
 
 df["Accessibility Level"] = pd.cut(
+
     df["Overall Accessibility Score"],
+
     bins=[
         -float("inf"),
         0.40,
         0.60,
         float("inf")
     ],
+
     labels=[
         "Low",
         "Medium",
@@ -128,12 +165,15 @@ df["Accessibility Level"] = pd.cut(
 st.subheader("District Accessibility Map")
 
 fig = px.choropleth(
+
     df,
+
     geojson=geojson,
+
     locations="District Name (district_name)",
+
     featureidkey="properties.district",
 
-    # 3 categories
     color="Accessibility Level",
 
     hover_name="District Name (district_name)",
@@ -144,7 +184,6 @@ fig = px.choropleth(
         "Accessibility Level": True
     },
 
-    # DARK COLOURS
     color_discrete_map={
         "Low": "#8B0000",
         "Medium": "#B8860B",
@@ -153,16 +192,25 @@ fig = px.choropleth(
 )
 
 # --------------------------------------------------
-# 8. DISTRICT NAME + RANK
+# 8. DISTRICT NAME + INTEGER RANK
 # --------------------------------------------------
 
 fig.add_trace(
+
     go.Scattergeo(
+
         lon=labels["lon"],
+
         lat=labels["lat"],
 
         text=[
-            f"<b>{name}</b><br>Rank: {rank}"
+
+            (
+                f"<b>{name}</b><br>Rank: {int(rank)}"
+                if pd.notna(rank)
+                else f"<b>{name}</b><br>Rank: No Data"
+            )
+
             for name, rank in zip(
                 labels["District"],
                 labels["Rank"]
@@ -171,7 +219,6 @@ fig.add_trace(
 
         mode="text",
 
-        # NAME + RANK स्पष्ट दिसण्यासाठी
         textfont=dict(
             size=10,
             color="black"
@@ -180,7 +227,13 @@ fig.add_trace(
         hoverinfo="text",
 
         hovertext=[
-            f"{name}<br>Rank: {rank}"
+
+            (
+                f"{name}<br>Rank: {int(rank)}"
+                if pd.notna(rank)
+                else f"{name}<br>Rank: No Data"
+            )
+
             for name, rank in zip(
                 labels["District"],
                 labels["Rank"]
@@ -201,6 +254,7 @@ fig.update_geos(
 )
 
 fig.update_layout(
+
     height=420,
 
     margin=dict(
@@ -224,9 +278,20 @@ st.plotly_chart(
 # 11. RESULT TABLE
 # --------------------------------------------------
 
-st.subheader("District Accessibility Result")
+st.subheader(
+    "District Accessibility Result"
+)
+
+result_table = df[
+    [
+        "District Name (district_name)",
+        "Overall Accessibility Score",
+        "Rank",
+        "Accessibility Level"
+    ]
+].sort_values("Rank")
 
 st.dataframe(
-    df,
+    result_table,
     use_container_width=True
 )
