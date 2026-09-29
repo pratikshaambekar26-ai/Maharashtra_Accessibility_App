@@ -18,7 +18,7 @@ st.title("Maharashtra District Accessibility Map")
 df = pd.read_excel(
     "sonu ojt.xlsx",
     sheet_name="Final Result"
-)
+) #म्हणजे app ला पूर्ण workbook मधून Final Result data मिळतो.
 
 # Rank as INTEGER
 df["Rank"] = pd.to_numeric(
@@ -196,7 +196,7 @@ fig = px.choropleth(
 # --------------------------------------------------
 
 fig.add_trace(
-
+#Map वर District Name + Rank दाखवला
     go.Scattergeo(
 
         lon=labels["lon"],
