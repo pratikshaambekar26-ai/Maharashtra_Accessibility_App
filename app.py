@@ -16,7 +16,7 @@ st.title("Maharashtra District Accessibility Map")
 # --------------------------------------------------
 
 df = pd.read_excel(
-    "sonu ojt.xlsx",
+    "Accessibility Index By PCA Method(1).xlsx",
     sheet_name="Final Result"
 ) #म्हणजे app ला पूर्ण workbook मधून Final Result data मिळतो.
 
