@@ -116,7 +116,7 @@ fig = px.choropleth(
         "Accessibility Level": True
     },
     color_discrete_map={
-        "Low": "#F4A6A6",
+        "Low": "#F08080",
         "Medium": "#B8860B",
         "High": "#006400"
     }
