@@ -14,7 +14,7 @@ st.title("Maharashtra District Accessibility Map")
 
 # 1. READ EXCEL
 df = pd.read_excel(
-    "Accessibility Index By PCA Method.xlsx",
+    "Maharashtra_Accessibility_App.xlsx",
     sheet_name="Final Ranking"
 )
 
